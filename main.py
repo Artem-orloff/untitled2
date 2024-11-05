@@ -18,7 +18,6 @@ app.add_middleware(
 )
 
 class NoteSchema(BaseModel):
-    id: int
     title: str
     description: str
 
