@@ -1,25 +1,24 @@
 from fastapi import FastAPI, HTTPException, Depends
-from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
+from fastapi.middleware.cors import CORSMiddleware
 from database import SessionLocal, engine, Base
 from pydantic import BaseModel
-
 
 from note import Note
 
 Base.metadata.create_all(bind=engine)
-
 app = FastAPI()
 
-# app.add_middleware(
-#     CORSMiddleware,
-#     allow_origins=["http://localhost:8086"],
-#     allow_credentials=True,
-#     allow_methods=["*"],
-#     allow_headers=["*"],
-# )
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:8080"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 class NoteSchema(BaseModel):
+    id: int
     title: str
     description: str
 
@@ -38,13 +37,14 @@ def get_db():
 def read_notes(db: Session = Depends(get_db)):
     return db.query(Note).all()
 
-@app.post("/notes")
+@app.post("/notes", response_model=NoteSchema)
 def create_note(note: NoteSchema, db: Session = Depends(get_db)):
-    db_note = Note(**note.dict())
+    db_note = Note(**note.dict(exclude={"id"}))
     db.add(db_note)
     db.commit()
     db.refresh(db_note)
     return db_note
+
 
 @app.put("/notes/{note_id}")
 def update_note(note_id: int, note: NoteUpdateSchema, db: Session = Depends(get_db)):
